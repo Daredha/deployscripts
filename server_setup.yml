@@ -65,10 +65,19 @@
         ansible_python_interpreter: /usr/bin/python3
 
     - name: Start Docker service
-      systemd:
+      service:
         name: docker
         state: started
         enabled: yes
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: Wait for Docker to start
+      command: docker ps
+      register: docker_check
+      until: docker_check.rc == 0
+      retries: 10
+      delay: 3
       vars:
         ansible_python_interpreter: /usr/bin/python3
 
