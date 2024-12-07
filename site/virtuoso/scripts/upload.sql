@@ -3,9 +3,9 @@
 --
 
 --
---  Add all files that end in .nt
+--  Add all files that end in .ttl
 --
-ld_dir_all ('data', '*.nt', 'no-graph-1')
+ld_dir_all ('data', '*.ttl', 'no-graph-1')
 ;
 
 --

@@ -126,7 +126,7 @@ def main():
         return
     
     index_name = "artwork"
-    data_dir = "../data/ld"  # Relative to where the script will be on the server
+    data_dir = "/opt/deployscripts/site/data/ld"  # Relative to where the script will be on the server
     
     # Create index with mapping
     create_index(es, index_name)
