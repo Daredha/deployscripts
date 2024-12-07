@@ -3,17 +3,18 @@
   become: true
   vars:
     venv_path: /opt/venv
-    ansible_python_interpreter: "{{ venv_path }}/bin/python3"
-  
+
   tasks:
     - name: Install aptitude
-      apt:
+      ansible.builtin.apt:
         name: aptitude
         state: latest
         update_cache: true
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
     - name: Install required system packages
-      apt:
+      ansible.builtin.apt:
         pkg:
           - apt-transport-https
           - ca-certificates
@@ -26,6 +27,8 @@
           - git
         state: latest
         update_cache: true
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
     - name: Install system build dependencies
       apt:
@@ -33,40 +36,62 @@
           - python3-dev
           - libyaml-dev
           - gcc
-          - docker-compose-plugin
+          - docker-compose
         state: present
         update_cache: true
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
     - name: Add Docker GPG apt Key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
     - name: Add Docker Repository
       apt_repository:
         repo: deb https://download.docker.com/linux/ubuntu focal stable
         state: present
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
     - name: Update apt and install docker-ce
       apt:
         name: docker-ce
         state: latest
         update_cache: true
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
+
+    - name: Start Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
     - name: Install python3-venv
       apt:
         name: python3-venv
         state: present
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
     - name: Create virtual environment
       command: python3 -m venv {{ venv_path }}
       args:
         creates: "{{ venv_path }}"
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
     - name: Install basic dependencies directly
       command: "{{ venv_path }}/bin/pip3 install --upgrade pip setuptools wheel packaging"
       args:
         creates: "{{ venv_path }}/lib/python3*/site-packages/packaging"
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
     - name: Remove existing Docker SDK packages
       pip:
@@ -76,6 +101,8 @@
           - docker-compose
         state: absent
         virtualenv: "{{ venv_path }}"
+      vars:
+        ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
     - name: Install Docker, Elasticsearch and rdflib Module for Python
       pip:
@@ -88,12 +115,16 @@
         virtualenv: "{{ venv_path }}"
         extra_args: "--no-build-isolation"
         state: present
+      vars:
+        ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
     - name: Install deployscripts
       git:
         repo: https://github.com/Daredha/deployscripts.git
         dest: /opt/deployscripts
         version: main
+      vars:
+        ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
     - name: Deploy virtuoso server
       command:
@@ -101,6 +132,8 @@
         chdir: /opt/deployscripts/site/virtuoso
       environment:
         DOCKER_HOST: unix:///var/run/docker.sock
+      vars:
+        ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
     - name: Deploy elastic server
       command:
@@ -108,6 +141,8 @@
         chdir: /opt/deployscripts/site/elastic
       environment:
         DOCKER_HOST: unix:///var/run/docker.sock
+      vars:
+        ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
     - name: Wait for Elastic to boot (30 seconds)
       pause:
@@ -117,12 +152,13 @@
       command: "{{ venv_path }}/bin/python3 /opt/deployscripts/site/elastic/populate_elastic.py"
       environment:
         PYTHONPATH: "{{ venv_path }}/lib/python3.12/site-packages"
+      vars:
+        ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
     - name: Test virtuoso
       uri:
         url: http://localhost:8890/sparql
         method: GET
-        body_format: json
         status_code: 200
       register: virtuoso_test
 
