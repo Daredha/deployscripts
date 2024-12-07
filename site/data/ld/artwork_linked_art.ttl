@@ -1,0 +1,245 @@
+@prefix crm: <http://www.cidoc-crm.org/cidoc-crm/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix la: <https://linked.art/ns/terms/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema1: <http://schema.org/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://www.twischje.nl/artwork/allesismogelijkvoorwiegelooft> a crm:E22_Human-Made_Object ;
+    dcterms:description <https://www.twischje.nl/controlled/motivation/eigen_beweging> ;
+    dcterms:subject <https://www.twischje.nl/concept/dieren>,
+        <https://www.twischje.nl/concept/jesus_christus>,
+        <https://www.twischje.nl/concept/magisch_realisme>,
+        <https://www.twischje.nl/concept/mens> ;
+    schema1:availability <https://www.twischje.nl/controlled/availability/forsale> ;
+    crm:P102_has_title [ a crm:E35_Title ;
+            rdfs:label "Everything is possible for those who believe"@en ],
+        [ a crm:E35_Title ;
+            rdfs:label "Alles is mogelijk voor wie gelooft"@nl ] ;
+    crm:P108i_was_produced_by [ a crm:E12_Production ;
+            crm:P14_carried_out_by <https://www.twischje.nl/author/liadeboernederland> ],
+        [ a crm:E12_Production ;
+            crm:P4_has_time-span "2020"^^xsd:gYear ] ;
+    crm:P138i_has_representation [ a crm:E36_Visual_Item ;
+            schema1:image <https://www.twischje.nl/static/Alles-kan-voor-wie-gelooft.jpg> ] ;
+    crm:P2_has_type <https://www.twischje.nl/controlled/classification/schilderij> ;
+    crm:P32_used_general_technique <https://www.twischje.nl/controlled/technique/olieverf> ;
+    crm:P43_has_dimension [ a crm:E54_Dimension ;
+            rdfs:label "height" ;
+            crm:P90_has_value 30 ;
+            crm:P91_has_unit "centimeter" ],
+        [ a crm:E54_Dimension ;
+            rdfs:label "depth" ;
+            crm:P90_has_value 0 ;
+            crm:P91_has_unit "centimeter" ],
+        [ a crm:E54_Dimension ;
+            rdfs:label "width" ;
+            crm:P90_has_value 60 ;
+            crm:P91_has_unit "centimeter" ] ;
+    crm:P45_consists_of <https://www.twischje.nl/controlled/material/paneel> ;
+    crm:P46i_forms_part_of <https://www.twischje.nl/controlled/collection/dieren> ;
+    crm:P67i_is_referred_to_by [ a crm:E33_Linguistic_Object ;
+            rdfs:label "Een poster van Jesus Christus met een lam op schoot en een kudde schapen. Een schaap lijkt van buiten de poster het beeld in te springen." ] ;
+    la:status <https://www.twischje.nl/controlled/status/voltooid> .
+
+<https://www.twischje.nl/artwork/blauwevrouw> a crm:E22_Human-Made_Object ;
+    dcterms:description <https://www.twischje.nl/controlled/motivation/eigen_beweging> ;
+    dcterms:subject <https://www.twischje.nl/concept/gebouw>,
+        <https://www.twischje.nl/concept/magisch_realisme>,
+        <https://www.twischje.nl/concept/mens>,
+        <https://www.twischje.nl/concept/vrouw> ;
+    schema1:availability <https://www.twischje.nl/controlled/availability/forsale> ;
+    crm:P102_has_title [ a crm:E35_Title ;
+            rdfs:label "Blue Lady"@en ],
+        [ a crm:E35_Title ;
+            rdfs:label "Blauwe Vrouw"@nl ] ;
+    crm:P108i_was_produced_by [ a crm:E12_Production ;
+            crm:P4_has_time-span "2017"^^xsd:gYear ],
+        [ a crm:E12_Production ;
+            crm:P14_carried_out_by <https://www.twischje.nl/author/liadeboernederland> ] ;
+    crm:P138i_has_representation [ a crm:E36_Visual_Item ;
+            schema1:image <https://www.twischje.nl/static/Blauwe-Vrouw.jpg> ] ;
+    crm:P2_has_type <https://www.twischje.nl/controlled/classification/schilderij> ;
+    crm:P32_used_general_technique <https://www.twischje.nl/controlled/technique/olieverf> ;
+    crm:P43_has_dimension [ a crm:E54_Dimension ;
+            rdfs:label "width" ;
+            crm:P90_has_value 60 ;
+            crm:P91_has_unit "centimeter" ],
+        [ a crm:E54_Dimension ;
+            rdfs:label "depth" ;
+            crm:P90_has_value 0 ;
+            crm:P91_has_unit "centimeter" ],
+        [ a crm:E54_Dimension ;
+            rdfs:label "height" ;
+            crm:P90_has_value 80 ;
+            crm:P91_has_unit "centimeter" ] ;
+    crm:P45_consists_of <https://www.twischje.nl/controlled/material/katoennen_doek> ;
+    crm:P67i_is_referred_to_by [ a crm:E33_Linguistic_Object ;
+            rdfs:label "Vrouw van water in een tempel" ] ;
+    la:status <https://www.twischje.nl/controlled/status/voltooid> .
+
+<https://www.twischje.nl/artwork/mijmeringen> a crm:E22_Human-Made_Object ;
+    dcterms:description <https://www.twischje.nl/controlled/motivation/in_opdracht> ;
+    dcterms:subject <https://www.twischje.nl/concept/mens>,
+        <https://www.twischje.nl/concept/vrouw> ;
+    schema1:availability <https://www.twischje.nl/controlled/availability/notforsale> ;
+    crm:P102_has_title [ a crm:E35_Title ;
+            rdfs:label "Mijmeringen"@nl ],
+        [ a crm:E35_Title ;
+            rdfs:label "Musings"@en ] ;
+    crm:P108i_was_produced_by [ a crm:E12_Production ;
+            crm:P4_has_time-span "2018"^^xsd:gYear ],
+        [ a crm:E12_Production ;
+            crm:P14_carried_out_by <https://www.twischje.nl/author/liadeboernederland> ] ;
+    crm:P138i_has_representation [ a crm:E36_Visual_Item ;
+            schema1:image <https://www.twischje.nl/static/MG_7056-1-683x1024.jpg> ] ;
+    crm:P2_has_type <https://www.twischje.nl/controlled/classification/schilderij> ;
+    crm:P32_used_general_technique <https://www.twischje.nl/controlled/technique/olieverf> ;
+    crm:P43_has_dimension [ a crm:E54_Dimension ;
+            rdfs:label "depth" ;
+            crm:P90_has_value 0 ;
+            crm:P91_has_unit "centimeter" ],
+        [ a crm:E54_Dimension ;
+            rdfs:label "width" ;
+            crm:P90_has_value 100 ;
+            crm:P91_has_unit "centimeter" ],
+        [ a crm:E54_Dimension ;
+            rdfs:label "height" ;
+            crm:P90_has_value 150 ;
+            crm:P91_has_unit "centimeter" ] ;
+    crm:P45_consists_of <https://www.twischje.nl/controlled/material/katoennen_doek> ;
+    crm:P67i_is_referred_to_by [ a crm:E33_Linguistic_Object ;
+            rdfs:label "Vrouw in oranje jurk, zittend en in de verte kijkend" ] ;
+    la:status <https://www.twischje.nl/controlled/status/voltooid> .
+
+<https://www.twischje.nl/author/davidcheifetzverenigdestaten> a crm:E21_Person ;
+    schema1:nationality "Verenigde Staten" ;
+    crm:P98i_was_born [ a crm:E67_Birth ;
+            crm:P4_has_time-span "1981"^^xsd:gYear ] ;
+    foaf:familyName "Cheifetz" ;
+    foaf:givenName "David" ;
+    foaf:homepage <https://www.davidcheifetz.com> ;
+    foaf:name "David Cheifetz" .
+
+<https://www.twischje.nl/concept/dieren> a skos:Concept ;
+    rdfs:label "Dieren" .
+
+<https://www.twischje.nl/concept/gebouw> a skos:Concept ;
+    rdfs:label "Gebouw" .
+
+<https://www.twischje.nl/concept/jesus_christus> a skos:Concept ;
+    rdfs:label "Jesus Christus" .
+
+<https://www.twischje.nl/controlled/availability/notforsale> a skos:Concept ;
+    rdfs:label "NotForSale" ;
+    skos:inScheme <https://www.twischje.nl/scheme/availability> .
+
+<https://www.twischje.nl/controlled/collection/dieren> a crm:E78_Collection,
+        skos:Concept ;
+    rdfs:label "Dieren" ;
+    skos:inScheme <https://www.twischje.nl/scheme/collection> .
+
+<https://www.twischje.nl/controlled/material/paneel> a crm:E57_Material,
+        skos:Concept ;
+    rdfs:label "Paneel" ;
+    skos:inScheme <https://www.twischje.nl/scheme/material> .
+
+<https://www.twischje.nl/controlled/motivation/in_opdracht> a skos:Concept ;
+    rdfs:label "In opdracht" ;
+    skos:inScheme <https://www.twischje.nl/scheme/motivation> .
+
+<https://www.twischje.nl/concept/magisch_realisme> a skos:Concept ;
+    rdfs:label "Magisch Realisme" .
+
+<https://www.twischje.nl/concept/vrouw> a skos:Concept ;
+    rdfs:label "Vrouw" .
+
+<https://www.twischje.nl/controlled/availability/forsale> a skos:Concept ;
+    rdfs:label "ForSale" ;
+    skos:inScheme <https://www.twischje.nl/scheme/availability> .
+
+<https://www.twischje.nl/controlled/material/katoennen_doek> a crm:E57_Material,
+        skos:Concept ;
+    rdfs:label "Katoennen doek" ;
+    skos:inScheme <https://www.twischje.nl/scheme/material> .
+
+<https://www.twischje.nl/controlled/motivation/eigen_beweging> a skos:Concept ;
+    rdfs:label "Eigen beweging" ;
+    skos:inScheme <https://www.twischje.nl/scheme/motivation> .
+
+<https://www.twischje.nl/static/Alles-kan-voor-wie-gelooft.jpg> a schema1:ImageObject ;
+    schema1:contentSize 4770142 ;
+    schema1:contentUrl <https://www.twischje.nl/static/Alles-kan-voor-wie-gelooft.jpg> ;
+    schema1:encoding <https://www.twischje.nl/static/compressed/compressed_Alles-kan-voor-wie-gelooft.jpg> ;
+    schema1:encodingFormat "image/jpeg" ;
+    schema1:height 1836 ;
+    schema1:thumbnail <https://www.twischje.nl/static/thumbnails/thumb_Alles-kan-voor-wie-gelooft.jpg> ;
+    schema1:width 3687 .
+
+<https://www.twischje.nl/static/Blauwe-Vrouw.jpg> a schema1:ImageObject ;
+    schema1:contentSize 1159929 ;
+    schema1:contentUrl <https://www.twischje.nl/static/Blauwe-Vrouw.jpg> ;
+    schema1:encodingFormat "image/jpeg" ;
+    schema1:height 1270 ;
+    schema1:thumbnail <https://www.twischje.nl/static/thumbnails/thumb_Blauwe-Vrouw.jpg> ;
+    schema1:width 970 .
+
+<https://www.twischje.nl/static/MG_7056-1-683x1024.jpg> a schema1:ImageObject ;
+    schema1:contentSize 98601 ;
+    schema1:contentUrl <https://www.twischje.nl/static/MG_7056-1-683x1024.jpg> ;
+    schema1:encodingFormat "image/jpeg" ;
+    schema1:height 1024 ;
+    schema1:thumbnail <https://www.twischje.nl/static/thumbnails/thumb_MG_7056-1-683x1024.jpg> ;
+    schema1:width 683 .
+
+<https://www.twischje.nl/static/compressed/compressed_Alles-kan-voor-wie-gelooft.jpg> a schema1:ImageObject ;
+    schema1:contentUrl <https://www.twischje.nl/static/compressed/compressed_Alles-kan-voor-wie-gelooft.jpg> ;
+    schema1:encodingFormat "image/jpeg" ;
+    schema1:height 49 ;
+    schema1:width 98 .
+
+<https://www.twischje.nl/static/thumbnails/thumb_Alles-kan-voor-wie-gelooft.jpg> a schema1:ImageObject ;
+    schema1:contentUrl <https://www.twischje.nl/static/thumbnails/thumb_Alles-kan-voor-wie-gelooft.jpg> ;
+    schema1:encodingFormat "image/jpeg" ;
+    schema1:height 49 ;
+    schema1:width 98 .
+
+<https://www.twischje.nl/static/thumbnails/thumb_Blauwe-Vrouw.jpg> a schema1:ImageObject ;
+    schema1:contentUrl <https://www.twischje.nl/static/thumbnails/thumb_Blauwe-Vrouw.jpg> ;
+    schema1:encodingFormat "image/jpeg" ;
+    schema1:height 130 ;
+    schema1:width 99 .
+
+<https://www.twischje.nl/static/thumbnails/thumb_MG_7056-1-683x1024.jpg> a schema1:ImageObject ;
+    schema1:contentUrl <https://www.twischje.nl/static/thumbnails/thumb_MG_7056-1-683x1024.jpg> ;
+    schema1:encodingFormat "image/jpeg" ;
+    schema1:height 149 ;
+    schema1:width 99 .
+
+<https://www.twischje.nl/author/liadeboernederland> a crm:E21_Person ;
+    schema1:nationality "Nederland" ;
+    crm:P98i_was_born [ a crm:E67_Birth ;
+            crm:P4_has_time-span "1961"^^xsd:gYear ] ;
+    foaf:familyName "de Boer" ;
+    foaf:givenName "Lia" ;
+    foaf:homepage <https://www.twischje.nl> ;
+    foaf:name "Lia de Boer" .
+
+<https://www.twischje.nl/concept/mens> a skos:Concept ;
+    rdfs:label "Mens" .
+
+<https://www.twischje.nl/controlled/classification/schilderij> a crm:E55_Type,
+        skos:Concept ;
+    rdfs:label "Schilderij" ;
+    skos:inScheme <https://www.twischje.nl/scheme/classification> .
+
+<https://www.twischje.nl/controlled/status/voltooid> a skos:Concept ;
+    rdfs:label "Voltooid" ;
+    skos:inScheme <https://www.twischje.nl/scheme/status> .
+
+<https://www.twischje.nl/controlled/technique/olieverf> a skos:Concept ;
+    rdfs:label "Olieverf" ;
+    skos:inScheme <https://www.twischje.nl/scheme/technique> .
+
