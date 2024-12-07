@@ -65,7 +65,7 @@
         ansible_python_interpreter: /usr/bin/python3
 
     - name: Start Docker service
-      service:
+      systemd:
         name: docker
         state: started
         enabled: yes
@@ -188,6 +188,17 @@
       copy:
         src: /opt/deployscripts/site/valeros/
         dest: /var/www/valeros
+        mode: '0755'
+        owner: www-data
+        group: www-data
+
+    - name: Ensure proper permissions on /var/www/valeros
+      file:
+        path: /var/www/valeros
+        state: directory
+        recurse: yes
+        owner: www-data
+        group: www-data
         mode: '0755'
 
     - name: Configure Nginx for Valeros
