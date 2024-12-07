@@ -183,3 +183,51 @@
 
     - debug:
         msg: "Elasticsearch test: {{ elasticsearch_test.status }}"
+
+    - name: Copy Valeros web application files
+      copy:
+        src: /opt/deployscripts/site/valeros/
+        dest: /var/www/valeros
+        mode: '0755'
+
+    - name: Configure Nginx for Valeros
+      copy:
+        dest: /etc/nginx/sites-available/valeros
+        content: |
+          server {
+              listen 80;
+              server_name valeros;
+              root /var/www/valeros;
+              index index.html;
+              
+              location / {
+                  try_files $uri $uri/ /index.html;
+              }
+          }
+        mode: '0644'
+
+    - name: Enable Nginx site for Valeros
+      file:
+        src: /etc/nginx/sites-available/valeros
+        dest: /etc/nginx/sites-enabled/valeros
+        state: link
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Test Valeros web application
+      uri:
+        url: http://localhost
+        method: GET
+        status_code: 200
+      register: valeros_test
+
+    - debug:
+        msg: "Valeros test: {{ valeros_test.status }}"
