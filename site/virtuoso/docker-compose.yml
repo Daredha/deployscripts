@@ -5,8 +5,10 @@ services:
     volumes:
       - ../data/ld:/database/data
       - ./scripts:/opt/virtuoso-opensource/initdb.d
+      #- ./config/virtuoso.ini:/opt/virtuoso-opensource/database/virtuoso.ini
     environment:
       - DBA_PASSWORD=dba
+      #- ENABLE_CORS=true
     ports:
       - "1111:1111"
       - "8890:8890"

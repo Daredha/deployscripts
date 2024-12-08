@@ -25,6 +25,8 @@
           - python3-setuptools
           - nginx
           - git
+          - certbot
+          - python3-certbot-nginx
         state: latest
         update_cache: true
       vars:
@@ -135,10 +137,10 @@
       vars:
         ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
-    - name: Deploy virtuoso server
+    - name: Deploy oxigraph server
       command:
-        cmd: docker compose -f /opt/deployscripts/site/virtuoso/docker-compose.yml up -d --build
-        chdir: /opt/deployscripts/site/virtuoso
+        cmd: docker run --rm -v /opt/deployscripts/site/oxigraph/data:/data -p 7878:7878 ghcr.io/oxigraph/oxigraph serve --location /data --bind 0.0.0.0:7878
+        chdir: /opt/deployscripts/site/oxigraph
       environment:
         DOCKER_HOST: unix:///var/run/docker.sock
       vars:
@@ -164,12 +166,21 @@
       vars:
         ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
-    - name: Test virtuoso
+    - name: Load data into oxigraph
+      command: curl http://localhost:7878/store?default -H 'Content-Type: text/turtle' -T /opt/deployscripts/site/oxigraph/data/data.ttl
+    
+
+    - name: Test oxigraph
       uri:
-        url: http://localhost:8890/sparql
-        method: GET
+        url: http://localhost:7878/query
+        method: POST
+        body: 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'
+        body_format: json
+        headers:
+          Accept: 'application/sparql-results+json'
+          Content-Type: 'application/sparql-query'
         status_code: 200
-      register: virtuoso_test
+      register: oxigraph_test
 
     - name: Test elasticsearch
       uri:
@@ -179,14 +190,14 @@
       register: elasticsearch_test
       
     - debug:
-        msg: "Virtuoso test: {{ virtuoso_test.status }}"
+        msg: "Oxigraph test: {{ oxigraph_test.status }}"
 
     - debug:
         msg: "Elasticsearch test: {{ elasticsearch_test.status }}"
 
     - name: Copy Valeros web application files
       copy:
-        src: /opt/deployscripts/site/valeros/
+        src: /opt/deployscripts/site/valeros/browser/
         dest: /var/www/valeros
         mode: '0755'
         owner: www-data
@@ -201,19 +212,46 @@
         group: www-data
         mode: '0755'
 
+    - name: Create SSL certificate directory
+      file:
+        path: /etc/letsencrypt/live/valeros
+        state: directory
+        mode: '0755'
+
+    - name: Generate self-signed SSL certificate
+      command: >
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048
+        -keyout /etc/letsencrypt/live/valeros/privkey.pem
+        -out /etc/letsencrypt/live/valeros/fullchain.pem
+        -subj "/C=US/ST=State/L=City/O=Organization/CN=valeros"
+      args:
+        creates: /etc/letsencrypt/live/valeros/fullchain.pem
+
     - name: Configure Nginx for Valeros
       copy:
         dest: /etc/nginx/sites-available/valeros
         content: |
           server {
-              listen 80;
+              listen 443 ssl;
               server_name valeros;
               root /var/www/valeros;
               index index.html;
+
+              ssl_certificate /etc/letsencrypt/live/valeros/fullchain.pem;
+              ssl_certificate_key /etc/letsencrypt/live/valeros/privkey.pem;
+              ssl_protocols TLSv1.2 TLSv1.3;
+              ssl_ciphers HIGH:!aNULL:!MD5;
               
               location / {
                   try_files $uri $uri/ /index.html;
               }
+          }
+
+          # Redirect HTTP to HTTPS
+          server {
+              listen 80;
+              server_name valeros;
+              return 301 https://$host$request_uri;
           }
         mode: '0644'
 
@@ -235,9 +273,10 @@
 
     - name: Test Valeros web application
       uri:
-        url: http://localhost
+        url: https://localhost
         method: GET
         status_code: 200
+        validate_certs: no
       register: valeros_test
 
     - debug:

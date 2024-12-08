@@ -1,0 +1,10 @@
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-methods: OPTIONS, HEAD, GET, POST, PUT, DELETE
+http.cors.allow-headers: "*"
+http.cors.allow-credentials: true
+cluster.name: "elasticsearch"
+node.name: "node-1"
+network.host: 0.0.0.0
+discovery.type: single-node
+xpack.security.enabled: false
