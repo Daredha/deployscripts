@@ -1,5 +1,5 @@
 from elasticsearch import Elasticsearch
-from rdflib import Graph, Namespace
+from rdflib import Graph, Namespace, URIRef, Literal
 import json
 import os
 import time
@@ -21,76 +21,92 @@ def create_index(es, index_name):
     mapping = {
         "mappings": {
             "properties": {
-                "id": {"type": "keyword"},
-                "type": {"type": "keyword"},
-                "label": {"type": "text"},
-                "description": {"type": "text"},
-                "created_by": {"type": "text"},
-                "created_date": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
-                "modified_date": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
-                "rights": {"type": "text"},
-                "source": {"type": "text"},
-                "subject": {"type": "text"},
-                "technique": {"type": "text"},
-                "title": {"type": "text"}
-            }
+                "@id": {"type": "keyword"},
+                "@type": {"type": "keyword"}
+            },
+            "dynamic": True  # Allow dynamic mapping for RDF predicates
         },
         "settings": {
-            "number_of_shards": 1,
-            "number_of_replicas": 0
+            "analysis": {
+                "analyzer": {
+                    "dutch": {
+                        "tokenizer": "standard",
+                        "filter": ["lowercase", "dutch_stop", "dutch_stemmer"]
+                    }
+                },
+                "filter": {
+                    "dutch_stop": {
+                        "type": "stop",
+                        "stopwords": "_dutch_"
+                    },
+                    "dutch_stemmer": {
+                        "type": "stemmer",
+                        "language": "dutch"
+                    }
+                }
+            }
         }
     }
     
-    if not es.indices.exists(index=index_name):
-        es.indices.create(index=index_name, body=mapping)
-        print(f"Created index: {index_name}")
+    if es.indices.exists(index=index_name):
+        es.indices.delete(index=index_name)
+    
+    es.indices.create(index=index_name, body=mapping)
+    print(f"Created index: {index_name}")
 
 def process_turtle_file(file_path):
     """Process a Turtle file and convert it to documents for Elasticsearch"""
     g = Graph()
     g.parse(file_path, format="turtle")
     
-    # Define common namespaces
-    crm = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
-    la = Namespace("https://linked.art/ns/terms/")
+    documents = {}
     
-    documents = []
+    # First pass: collect all named resources that have a type
+    named_resources = set()
+    for s, p, o in g:
+        if isinstance(s, URIRef) and str(p) == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":
+            named_resources.add(str(s))
     
-    # Query for artworks
-    query = """
-    SELECT DISTINCT ?s ?label ?type ?description ?creator ?date ?rights ?source ?subject ?technique
-    WHERE {
-        ?s a ?type .
-        OPTIONAL { ?s rdfs:label ?label }
-        OPTIONAL { ?s dc:description ?description }
-        OPTIONAL { ?s dc:creator ?creator }
-        OPTIONAL { ?s dc:date ?date }
-        OPTIONAL { ?s dc:rights ?rights }
-        OPTIONAL { ?s dc:source ?source }
-        OPTIONAL { ?s dc:subject ?subject }
-        OPTIONAL { ?s la:technique ?technique }
-    }
-    """
-    
-    for row in g.query(query):
-        doc = {
-            "id": str(row.s),
-            "type": str(row.type),
-            "label": str(row.label) if row.label else None,
-            "description": str(row.description) if row.description else None,
-            "created_by": str(row.creator) if row.creator else None,
-            "created_date": str(row.date) if row.date else None,
-            "rights": str(row.rights) if row.rights else None,
-            "source": str(row.source) if row.source else None,
-            "subject": str(row.subject) if row.subject else None,
-            "technique": str(row.technique) if row.technique else None
-        }
+    # Second pass: process only named resources and their properties
+    for s, p, o in g:
+        subject_id = str(s)
         
-        # Remove None values
-        doc = {k: v for k, v in doc.items() if v is not None}
-        documents.append(doc)
+        # Skip if subject is not a named resource we want to index
+        if subject_id not in named_resources:
+            continue
+            
+        predicate = str(p)
+        
+        if subject_id not in documents:
+            documents[subject_id] = {
+                "@id": subject_id,
+                "@type": []
+            }
+        
+        # Handle object based on its type
+        if isinstance(o, URIRef):
+            obj_value = str(o)
+        elif isinstance(o, Literal):
+            obj_value = str(o)
+        else:
+            # Skip blank nodes
+            continue
+            
+        # Add value to the appropriate predicate list
+        if predicate not in documents[subject_id]:
+            documents[subject_id][predicate] = []
+        if obj_value not in documents[subject_id][predicate]:
+            documents[subject_id][predicate].append(obj_value)
+            
+        # Special handling for rdf:type
+        if predicate == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":
+            documents[subject_id]["@type"].append(obj_value)
     
-    return documents
+    # Convert dictionary to list of documents
+    doc_list = list(documents.values())
+    print(f"Found {len(doc_list)} documents in {file_path}")
+    
+    return doc_list
 
 def index_documents(es, index_name, data_dir):
     """Index documents from Turtle files in the data directory"""
@@ -107,7 +123,8 @@ def index_documents(es, index_name, data_dir):
                 if documents:
                     bulk_data = []
                     for doc in documents:
-                        bulk_data.append({"index": {"_index": index_name}})
+                        # Use the document's ID as the Elasticsearch document ID
+                        bulk_data.append({"index": {"_index": index_name, "_id": doc["@id"]}})
                         bulk_data.append(doc)
                     
                     if bulk_data:
@@ -126,7 +143,7 @@ def main():
         return
     
     index_name = "artwork"
-    data_dir = "/opt/deployscripts/site/data/ld"  # Relative to where the script will be on the server
+    data_dir = os.path.join(os.path.dirname(__file__), "..", "data", "ld")  # Use relative path from script location
     
     # Create index with mapping
     create_index(es, index_name)

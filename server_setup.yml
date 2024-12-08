@@ -139,7 +139,7 @@
 
     - name: Deploy oxigraph server
       command:
-        cmd: docker run --rm -v /opt/deployscripts/site/oxigraph/data:/data -p 7878:7878 ghcr.io/oxigraph/oxigraph serve --location /data --bind 0.0.0.0:7878
+        cmd: docker compose -f /opt/deployscripts/site/oxigraph/docker-compose.yml up -d
         chdir: /opt/deployscripts/site/oxigraph
       environment:
         DOCKER_HOST: unix:///var/run/docker.sock
@@ -165,9 +165,12 @@
         PYTHONPATH: "{{ venv_path }}/lib/python3.12/site-packages"
       vars:
         ansible_python_interpreter: "{{ venv_path }}/bin/python3"
-
+  
     - name: Load data into oxigraph
-      command: curl http://localhost:7878/store?default -H 'Content-Type: text/turtle' -T /opt/deployscripts/site/oxigraph/data/data.ttl
+      command: >-
+        curl -X POST "http://localhost:8890/store?default" 
+        -H "Content-Type: text/turtle" 
+        --data-binary "@/opt/deployscripts/site/data/ld/artwork_linked_art.ttl"
     
 
     - name: Test oxigraph
