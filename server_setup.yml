@@ -137,15 +137,6 @@
       vars:
         ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
-    - name: Deploy oxigraph server
-      command:
-        cmd: docker compose -f /opt/deployscripts/site/oxigraph/docker-compose.yml up -d
-        chdir: /opt/deployscripts/site/oxigraph
-      environment:
-        DOCKER_HOST: unix:///var/run/docker.sock
-      vars:
-        ansible_python_interpreter: "{{ venv_path }}/bin/python3"
-
     - name: Deploy elastic server
       command:
         cmd: docker compose -f /opt/deployscripts/site/elastic/docker-compose.yml up -d --build
@@ -155,27 +146,24 @@
       vars:
         ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
-    - name: Wait for Elastic to boot (30 seconds)
-      pause:
-        seconds: 30
-
-    - name: Run populate_elastic.py
-      command: "{{ venv_path }}/bin/python3 /opt/deployscripts/site/elastic/populate_elastic.py"
+    - name: Deploy oxigraph server
+      command:
+        cmd: docker compose -f /opt/deployscripts/site/oxigraph/docker-compose.yml up -d
+        chdir: /opt/deployscripts/site/oxigraph
       environment:
-        PYTHONPATH: "{{ venv_path }}/lib/python3.12/site-packages"
+        DOCKER_HOST: unix:///var/run/docker.sock
       vars:
         ansible_python_interpreter: "{{ venv_path }}/bin/python3"
-  
+    
     - name: Load data into oxigraph
       command: >-
-        curl -X POST "http://localhost:8890/store?default" 
+        curl -X POST "http://localhost:7878/store?default" 
         -H "Content-Type: text/turtle" 
         --data-binary "@/opt/deployscripts/site/data/ld/artwork_linked_art.ttl"
     
-
     - name: Test oxigraph
       uri:
-        url: http://localhost:8890/sparql
+        url: http://localhost:7878/query
         method: POST
         body: 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'
         body_format: json
@@ -184,6 +172,10 @@
           Content-Type: 'application/sparql-query'
         status_code: 200
       register: oxigraph_test
+    
+    - name: Give Elastic Search some time to start
+      pause:
+        seconds: 15
 
     - name: Test elasticsearch
       uri:
@@ -191,6 +183,13 @@
         method: GET
         status_code: 200
       register: elasticsearch_test
+
+    - name: Load data into elasticsearch
+      command: "{{ venv_path }}/bin/python3 /opt/deployscripts/site/elastic/populate_elastic.py"
+      environment:
+        PYTHONPATH: "{{ venv_path }}/lib/python3.12/site-packages"
+      vars:
+        ansible_python_interpreter: "{{ venv_path }}/bin/python3"    
       
     - debug:
         msg: "Oxigraph test: {{ oxigraph_test.status }}"
@@ -230,7 +229,7 @@
       args:
         creates: /etc/letsencrypt/live/valeros/fullchain.pem
 
-    - name: Configure Nginx for Valeros
+    - name: Configure Nginx
       copy:
         dest: /etc/nginx/sites-available/valeros
         content: |
@@ -247,6 +246,59 @@
               
               location / {
                   try_files $uri $uri/ /index.html;
+              }
+              location ~ ^/(_search|_msearch|_count) {
+                  if ($request_method = 'OPTIONS') {
+                      add_header 'Access-Control-Allow-Origin' '*';
+                      add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+                      add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Accept';
+                      add_header 'Access-Control-Max-Age' 1728000;
+                      add_header 'Content-Type' 'text/plain; charset=utf-8';
+                      add_header 'Content-Length' 0;
+                      return 204;
+                  }
+
+                  # Proxy settings for Elasticsearch
+                  proxy_pass http://localhost:9200;
+                  proxy_http_version 1.1;
+                  proxy_set_header Connection "";
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+
+                  # CORS headers
+                  add_header 'Access-Control-Allow-Origin' '*' always;
+                  add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+                  add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Accept' always;
+                  add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+              }
+
+              location /sparql {
+                  if ($request_method = 'OPTIONS') {
+                      add_header 'Access-Control-Allow-Origin' '*';
+                      add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+                      add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Accept';
+                      add_header 'Access-Control-Max-Age' 1728000;
+                      add_header 'Content-Type' 'text/plain; charset=utf-8';
+                      add_header 'Content-Length' 0;
+                      return 204;
+                  }
+
+                  # Proxy settings for Oxigraph
+                  proxy_pass http://localhost:7878/query;
+                  proxy_http_version 1.1;
+                  proxy_set_header Connection "";
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+
+                  # CORS headers
+                  add_header 'Access-Control-Allow-Origin' '*' always;
+                  add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+                  add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Accept' always;
+                  add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
               }
           }
 
