@@ -175,7 +175,7 @@
 
     - name: Test oxigraph
       uri:
-        url: http://localhost:7878/query
+        url: http://localhost:8890/sparql
         method: POST
         body: 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'
         body_format: json
@@ -284,3 +284,21 @@
 
     - debug:
         msg: "Valeros test: {{ valeros_test.status }}"
+
+    # Cleanup tasks
+    - name: Remove deployscripts folder
+      ansible.builtin.file:
+        path: /opt/deployscripts
+        state: absent
+
+    - name: Find tar.gz files in /opt
+      ansible.builtin.find:
+        paths: /opt
+        patterns: "*.tar.gz"
+      register: tarfiles
+
+    - name: Remove tar.gz files
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ tarfiles.files }}"
