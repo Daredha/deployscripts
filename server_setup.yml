@@ -542,13 +542,18 @@
         msg: "Elasticsearch test: {{ elasticsearch_test.status }}"
 
     - name: (Elastic) Load data into elasticsearch
+      command: "{{ venv_path }}/bin/python3 /opt/deployscripts/site/elastic/populate_elastic.py"
+      environment:
+        PYTHONPATH: "{{ venv_path }}/lib/python3.12/site-packages"
+      vars:
+        ansible_python_interpreter: "{{ venv_path }}/bin/python3"
     
     - name: (Valeros) Check if source directory exists
       stat:
         path: "{{ playbook_dir }}/site/valeros/browser"
       register: source_dir
 
-      debug:
+    - debug:
         msg: "Source directory exists: {{ source_dir.stat.exists }}, Path: {{ playbook_dir }}/site/valeros/browser"
 
     - name: (Valeros) Copy Valeros web application files
@@ -597,13 +602,6 @@
 
     - debug:
         msg: "Valeros test: {{ valeros_test.status }}"
-
-
-      command: "{{ venv_path }}/bin/python3 /opt/deployscripts/site/elastic/populate_elastic.py"
-      environment:
-        PYTHONPATH: "{{ venv_path }}/lib/python3.12/site-packages"
-      vars:
-        ansible_python_interpreter: "{{ venv_path }}/bin/python3"
 
     # Cleanup tasks
     - name: (System) Remove deployscripts folder
