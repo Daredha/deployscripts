@@ -11,19 +11,6 @@ services:
     networks:
       - oxigraph_network
 
-  nginx:
-    build: 
-      context: ../nginx
-      dockerfile: Dockerfile
-    ports:
-      - "8890:80"
-    volumes:
-      - ../nginx/conf.d:/etc/nginx/conf.d
-    depends_on:
-      - oxigraph
-    networks:
-      - oxigraph_network
-
 networks:
   oxigraph_network:
     driver: bridge

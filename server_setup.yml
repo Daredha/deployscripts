@@ -23,7 +23,6 @@
           - python3-pip
           - virtualenv
           - python3-setuptools
-          - nginx
           - git
           - certbot
           - python3-certbot-nginx
@@ -31,6 +30,37 @@
         update_cache: true
       vars:
         ansible_python_interpreter: /usr/bin/python3
+
+    - name: Add OpenResty repository signing key
+      ansible.builtin.apt_key:
+        url: https://openresty.org/package/pubkey.gpg
+        state: present
+
+    - name: Add OpenResty repository
+      ansible.builtin.apt_repository:
+        repo: deb http://openresty.org/package/ubuntu focal main
+        state: present
+        filename: openresty
+
+    - name: Install OpenResty
+      ansible.builtin.apt:
+        name: openresty
+        state: present
+        update_cache: yes
+
+    - name: Create nginx configuration directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      with_items:
+        - /etc/nginx/conf.d
+
+    - name: Copy Lua transform script
+      ansible.builtin.copy:
+        src: site/nginx/conf.d/transform.lua
+        dest: /etc/nginx/conf.d/transform.lua
+        mode: '0644'
 
     - name: Install system build dependencies
       apt:
@@ -233,6 +263,10 @@
       copy:
         dest: /etc/nginx/sites-available/valeros
         content: |
+          # Lua settings
+          lua_package_path "/etc/nginx/conf.d/?.lua;;";
+          lua_need_request_body on;
+
           server {
               listen 443 ssl;
               server_name valeros;
@@ -275,6 +309,8 @@
               }
 
               location /sparql {
+                  access_by_lua_file /etc/nginx/conf.d/transform.lua;
+
                   if ($request_method = 'OPTIONS') {
                       add_header 'Access-Control-Allow-Origin' '*';
                       add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
