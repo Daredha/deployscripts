@@ -395,6 +395,10 @@
         state: present
         update_cache: yes
 
+    - name: (Docker) Wait for a minute to allow Docker to be ready
+      wait_for:
+        timeout: 60
+        
     - name: (Docker) Start Docker service
       command: systemctl start docker
       become: yes
