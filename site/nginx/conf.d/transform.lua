@@ -5,6 +5,10 @@ ngx.req.read_body()
 local body = ngx.req.get_body_data()
 local method = ngx.req.get_method()
 
+-- Set content type for SPARQL query
+ngx.req.set_header("Content-Type", "application/sparql-query")
+ngx.req.set_header("Accept", "application/sparql-results+json")
+
 if body then
     local success, json = pcall(cjson.decode, body)
     if success and json.query then
@@ -50,7 +54,6 @@ local capture = ngx.location.capture("/query" .. (ngx.var.is_args or "") .. (ngx
 })
 
 if capture.status == 200 then
-    ngx.status = capture.status
     ngx.header["Content-Type"] = "application/json"
     ngx.say(transform_response(capture.body))
 else
