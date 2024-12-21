@@ -3,6 +3,9 @@ from rdflib import Graph, Namespace, URIRef, Literal
 import json
 import os
 import time
+import requests
+from pathlib import Path
+from typing import Dict, List, Any
 
 def wait_for_elasticsearch(es, max_retries=30, delay=10):
     """Wait for Elasticsearch to become available"""
@@ -108,7 +111,7 @@ def process_turtle_file(file_path):
     
     return doc_list
 
-def index_documents(es, index_name, data_dir):
+def index_documents(es, index_name, data_dir, auth):
     """Index documents from Turtle files in the data directory"""
     for filename in os.listdir(data_dir):
         if filename.endswith('.ttl'):
@@ -128,14 +131,38 @@ def index_documents(es, index_name, data_dir):
                         bulk_data.append(doc)
                     
                     if bulk_data:
-                        es.bulk(index=index_name, body=bulk_data, refresh=True)
-                        print(f"Indexed {len(documents)} documents from {filename}")
+                        response = requests.post(
+                            "http://localhost:9200/_bulk",
+                            headers={"Content-Type": "application/x-ndjson"},
+                            auth=auth,
+                            data="\n".join([json.dumps(item) for item in bulk_data]) + "\n"
+                        )
+
+                        if not response.ok:
+                            print(f"Error indexing documents: {response.text}")
+                            return
+
+                        result = response.json()
+                        if result.get("errors", False):
+                            print(f"Errors occurred while indexing: {json.dumps(result, indent=2)}")
+                        else:
+                            print(f"Successfully indexed {len(documents)} documents into {index_name}")
             except Exception as e:
                 print(f"Error processing {filename}: {str(e)}")
 
 def main():
-    # Connect to Elasticsearch
-    es = Elasticsearch(["http://localhost:9200"])
+    # Authentication credentials
+    ADMIN_USER = os.getenv('ADMIN_USER', 'admin')
+    ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+
+    if not ADMIN_PASSWORD:
+        raise ValueError("ADMIN_PASSWORD environment variable must be set")
+
+    # Authentication tuple for requests
+    auth = (ADMIN_USER, ADMIN_PASSWORD)
+
+    # Initialize Elasticsearch client
+    es = Elasticsearch(['http://localhost:9200'])
     
     # Wait for Elasticsearch to be ready
     if not wait_for_elasticsearch(es):
@@ -149,7 +176,7 @@ def main():
     create_index(es, index_name)
     
     # Index documents
-    index_documents(es, index_name, data_dir)
+    index_documents(es, index_name, data_dir, auth)
     
     print("Indexing complete!")
 
