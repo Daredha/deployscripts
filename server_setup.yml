@@ -27,7 +27,8 @@
           - certbot
           - python3-certbot-nginx
           - ufw
-        state: latest
+          - apache2-utils
+        state: present
         update_cache: true
       vars:
         ansible_python_interpreter: /usr/bin/python3
@@ -110,8 +111,12 @@
         state: directory
         mode: '0755'
 
+    - name: Generate admin password
+      set_fact:
+        admin_password: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+
     - name: (OpenResty) Create htpasswd file
-      command: htpasswd -bc /etc/nginx/auth/.htpasswd admin "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+      command: htpasswd -bc /etc/nginx/auth/.htpasswd admin "{{ admin_password }}"
 
     - name: (OpenResty) Create OpenResty configuration
       copy:
@@ -556,7 +561,7 @@
       command: >-
         curl -X POST "http://localhost:7878/store?default" 
         -H "Content-Type: text/turtle" 
-        -u "admin:{{ lookup('file', '/etc/nginx/auth/.htpasswd') | regex_replace('^admin:', '') }}"
+        -u "admin:{{ admin_password }}"
         --data-binary "@/opt/deployscripts/site/data/ld/artwork_linked_art.ttl"
       register: load_result
       retries: 3
@@ -605,7 +610,7 @@
       command: "{{ venv_path }}/bin/python3 /opt/deployscripts/site/elastic/populate_elastic.py"
       environment:
         PYTHONPATH: "{{ venv_path }}/lib/python3.12/site-packages"
-        ADMIN_PASSWORD: "{{ lookup('file', '/etc/nginx/auth/.htpasswd') | regex_replace('^admin:', '') }}"
+        ADMIN_PASSWORD: "{{ admin_password }}"
       vars:
         ansible_python_interpreter: "{{ venv_path }}/bin/python3"
     
@@ -681,3 +686,21 @@
         path: "{{ item.path }}"
         state: absent
       with_items: "{{ tarfiles.files }}"
+
+    - name: (Security) Display admin credentials
+      debug:
+        msg:
+          - "==============================================="
+          - "              ADMIN CREDENTIALS (SAVE NOW!)    "
+          - "==============================================="
+          - ""
+          - "Username: admin"
+          - "Password: {{ admin_password }}"
+          - ""
+          - "These credentials are required for:"
+          - "- Modifying Oxigraph data (/store and /update endpoints)"
+          - "- Elasticsearch write operations"
+          - ""
+          - "==============================================="
+          - "IMPORTANT: This password will not be shown again!"
+          - "==============================================="
