@@ -27,7 +27,8 @@
           - certbot
           - python3-certbot-nginx
           - ufw
-        state: latest
+          - apache2-utils
+        state: present
         update_cache: true
       vars:
         ansible_python_interpreter: /usr/bin/python3
@@ -103,6 +104,19 @@
       file:
         path: /etc/nginx/sites-enabled/valeros
         state: absent
+
+    - name: (OpenResty) Create auth directory
+      file:
+        path: /etc/nginx/auth
+        state: directory
+        mode: '0755'
+
+    - name: Generate admin password
+      set_fact:
+        admin_password: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+
+    - name: (OpenResty) Create htpasswd file
+      command: htpasswd -bc /etc/nginx/auth/.htpasswd admin "{{ admin_password }}"
 
     - name: (OpenResty) Create OpenResty configuration
       copy:
@@ -225,7 +239,7 @@
               root /var/www/valeros;
               index index.html;
 
-              # Internal location for Oxigraph
+              # Internal location for Oxigraph query
               location /query {
                   internal;
                   proxy_pass http://localhost:7878/query;
@@ -237,7 +251,30 @@
                   proxy_set_header X-Forwarded-Proto $scheme;
               }
 
-              # API endpoints first
+              # Oxigraph modification endpoints
+              location ~ ^/(store|update) {
+                  auth_basic "Restricted Access";
+                  auth_basic_user_file /etc/nginx/auth/.htpasswd;
+
+                  include /etc/nginx/conf.d/cors.conf;
+
+                  if ($request_method = 'OPTIONS') {
+                      add_header 'Access-Control-Max-Age' 1728000;
+                      add_header 'Content-Type' 'text/plain charset=UTF-8';
+                      add_header 'Content-Length' 0;
+                      return 204;
+                  }
+
+                  proxy_pass http://localhost:7878;
+                  proxy_http_version 1.1;
+                  proxy_set_header Connection "";
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+
+              # SPARQL endpoint (read-only queries)
               location /sparql {
                   include /etc/nginx/conf.d/cors.conf;
 
@@ -261,6 +298,29 @@
               }
 
               location /_search {
+                  include /etc/nginx/conf.d/cors.conf;
+
+                  if ($request_method = 'OPTIONS') {
+                      add_header 'Access-Control-Max-Age' 1728000;
+                      add_header 'Content-Type' 'text/plain charset=UTF-8';
+                      add_header 'Content-Length' 0;
+                      return 204;
+                  }
+
+                  proxy_pass http://localhost:9200;
+                  proxy_http_version 1.1;
+                  proxy_set_header Connection "";
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+
+              # Elasticsearch write endpoints
+              location ~ ^/(_bulk|.*/_create|.*/_update|.*/_delete) {
+                  auth_basic "Restricted Access";
+                  auth_basic_user_file /etc/nginx/auth/.htpasswd;
+
                   include /etc/nginx/conf.d/cors.conf;
 
                   if ($request_method = 'OPTIONS') {
@@ -501,6 +561,7 @@
       command: >-
         curl -X POST "http://localhost:7878/store?default" 
         -H "Content-Type: text/turtle" 
+        -u "admin:{{ admin_password }}"
         --data-binary "@/opt/deployscripts/site/data/ld/artwork_linked_art.ttl"
       register: load_result
       retries: 3
@@ -549,6 +610,7 @@
       command: "{{ venv_path }}/bin/python3 /opt/deployscripts/site/elastic/populate_elastic.py"
       environment:
         PYTHONPATH: "{{ venv_path }}/lib/python3.12/site-packages"
+        ADMIN_PASSWORD: "{{ admin_password }}"
       vars:
         ansible_python_interpreter: "{{ venv_path }}/bin/python3"
     
@@ -624,3 +686,21 @@
         path: "{{ item.path }}"
         state: absent
       with_items: "{{ tarfiles.files }}"
+
+    - name: (Security) Display admin credentials
+      debug:
+        msg:
+          - "==============================================="
+          - "              ADMIN CREDENTIALS (SAVE NOW!)    "
+          - "==============================================="
+          - ""
+          - "Username: admin"
+          - "Password: {{ admin_password }}"
+          - ""
+          - "These credentials are required for:"
+          - "- Modifying Oxigraph data (/store and /update endpoints)"
+          - "- Elasticsearch write operations"
+          - ""
+          - "==============================================="
+          - "IMPORTANT: This password will not be shown again!"
+          - "==============================================="
